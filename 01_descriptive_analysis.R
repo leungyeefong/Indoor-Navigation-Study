@@ -74,6 +74,10 @@ baseline_devices <- baseline_devices %>%
          time_sec = `time`,
          walk_order = `walkorder`)
 
+# baseline -> Baseline
+baseline_devices <- baseline_devices %>%
+  mutate(
+    device = if_else(tolower(device) == "baseline", "Baseline", device))
 
 
 # Separate: eg. L10 & L10R in different categories
@@ -131,20 +135,19 @@ specific_completion_rates
 # Route-specific completion rates by navigation condition (Baseline vs App-assisted)
 route_baseline_vs_app <- baseline_devices %>%
   mutate(
-    route_combined = sub("R$", "", route),
-    condition = if_else(device == "Baseline", "Baseline", "App-assisted")) %>%
-  group_by(route_combined, condition) %>%
+    route_combined = sub("R$", "", route))%>%
   
+  group_by(route_combined, device) %>%
   summarise(
     total_walks = n(),
     completed_walks = sum(success == "y", na.rm = TRUE),
     completion_rate = 100 * completed_walks / total_walks,
     .groups = "drop") %>%
-  arrange(route_combined, condition) %>%
+  arrange(route_combined, device) %>%
   
   rename(
     Route = route_combined,
-    Condition = condition,
+    Condition = device,
     `Total Walks` = total_walks,
     `Completed Walks` = completed_walks,
     `Completion Rate (%)` = completion_rate) %>%
@@ -158,10 +161,9 @@ route_baseline_vs_app
 # Route-specific completion rates by navigation condition (R routes combined)
 specific_completion_by_condition <- baseline_devices %>%
   mutate(
-    route_combined = sub("R$", "", route),
-    device = if_else(tolower(device) == "baseline", "Baseline", device)) %>%
+    route_combined = sub("R$", "", route)) %>%
+
   group_by(route_combined, device) %>%
-  
   summarise(
     total_walks = n(),
     completed_walks = sum(success == "y", na.rm = TRUE),
@@ -171,7 +173,7 @@ specific_completion_by_condition <- baseline_devices %>%
   
   rename(
     Route = route_combined,
-    `Navigation Condition` = device,
+    `Application Condition` = device,
     `Total Walks` = total_walks,
     `Completed Walks` = completed_walks,
     `Completion Rate (%)` = completion_rate) %>%
@@ -180,6 +182,30 @@ specific_completion_by_condition <- baseline_devices %>%
 
 specific_completion_by_condition
 
+# ————————————————————————————————————————————————————————————————————————————
 
+# ———————————————— Variable Definition ———————————————————————————————————————————
+# Outcome: completion rate (Succee = 1, Fail = 0)
+analysis <- baseline_devices
+analysis <- analysis %>%
+  mutate(completed = if_else(success == "y", 1, 0))
+# Quick check
+analysis %>% count(completed)
+
+
+# Covariate
+analysis <- analysis %>%
+  mutate(route_combined = sub("R$", "", route))
+
+
+# Exposure 1: Baseline vs App-assisted
+analysis <- analysis %>%
+  mutate(
+    application = if_else(device == "Baseline", "Baseline","App-assisted"))
+# check
+analysis %>% count(device, application)
+
+
+# Exposure 2: Baseline/Clew/Goodmaps/Navilens
 
 # ————————————————————————————————————————————————————————————————————————————
