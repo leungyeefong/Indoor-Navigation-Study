@@ -209,3 +209,47 @@ analysis %>% count(device, application)
 # Exposure 2: Baseline/Clew/Goodmaps/Navilens
 
 # ————————————————————————————————————————————————————————————————————————————
+
+# ———————————————— Logistic Regression —————————————————————————————————————————
+# Model for Exposure 1
+analysis$application <- factor(analysis$application, levels = c("Baseline", "App-assisted"))
+analysis$route_combined <- factor(analysis$route_combined)
+
+# Logistic Regression
+logit_ex1 <- glm(
+  completed ~ application + route_combined,
+  family = binomial(),
+  data = analysis)
+
+summary(logit_ex1)
+exp(cbind(OR = coef(logit_ex1), confint(logit_ex1)))
+
+# Firth Logistic Regression
+firth_ex1 <- logistf(
+  completed ~ application + route_combined, data = analysis)
+
+summary(firth_ex1)
+exp(cbind(OR = coef(firth_ex1), confint(firth_ex1)))
+
+
+
+# Model for Exposure 2
+analysis$device <- factor(analysis$device, levels = c("Baseline", "Clew", "Goodmaps", "NaviLens"))
+
+# Logistic Regression
+logit_ex2 <- glm(
+  completed ~ device + route_combined,
+  family = binomial(),
+  data = analysis)
+
+summary(logit_ex2)
+exp(cbind(OR = coef(logit_ex2), confint(logit_ex2)))
+
+# Firth Logistic Regression
+firth_ex2 <- logistf(
+  completed ~ device + route_combined, data = analysis)
+
+summary(firth_ex2)
+exp(cbind(OR = coef(firth_ex2), confint(firth_ex2)))
+
+# ————————————————————————————————————————————————————————————————————————————
