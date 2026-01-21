@@ -217,9 +217,7 @@ analysis$route_combined <- factor(analysis$route_combined)
 
 # Logistic Regression
 logit_ex1 <- glm(
-  completed ~ application + route_combined,
-  family = binomial(),
-  data = analysis)
+  completed ~ application + route_combined, family = binomial(), data = analysis)
 
 summary(logit_ex1)
 exp(cbind(OR = coef(logit_ex1), confint(logit_ex1)))
@@ -238,9 +236,7 @@ analysis$device <- factor(analysis$device, levels = c("Baseline", "Clew", "Goodm
 
 # Logistic Regression
 logit_ex2 <- glm(
-  completed ~ device + route_combined,
-  family = binomial(),
-  data = analysis)
+  completed ~ device + route_combined, family = binomial(), data = analysis)
 
 summary(logit_ex2)
 exp(cbind(OR = coef(logit_ex2), confint(logit_ex2)))
