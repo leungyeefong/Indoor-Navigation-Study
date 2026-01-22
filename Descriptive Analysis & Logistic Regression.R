@@ -29,7 +29,7 @@ demographics <- demographics %>%
       `race/ethnicity` == "Asian" ~ 2,
       TRUE ~ NA_real_),
     
-    visual_cat = case_when(
+    visual_acuity = case_when(
       visual.acuity == "No vision" ~ 0,
       visual.acuity == "Able to see lights" ~ 1,
       visual.acuity == "Able to see shapes" ~ 2,
@@ -44,12 +44,12 @@ demographic_table <- tbl_summary(
     demographics,
     sex_cat = factor(sex_cat, levels = c(0, 1), labels = c("Male", "Female")),
     race_cat = factor(race_cat, levels = c(0, 1, 2), labels = c("White", "Black", "Asian")),
-    visual_cat = factor(
-      visual_cat,
+    visual_acuity = factor(
+      visual_acuity,
       levels = c(0, 1, 2, 3),
       labels = c("No vision", "Able to see lights", "Able to see shapes", "Able to read large text")))
   
-  [, c("sex_cat", "age", "race_cat", "visual_cat")],
+  [, c("sex_cat", "age", "race_cat", "visual_acuity")],
   statistic = list(
     all_categorical() ~ "{n} ({p}%)",
     age ~ "{median} [{p25}, {p75}]"),
@@ -58,7 +58,7 @@ demographic_table <- tbl_summary(
     sex_cat    ~ "Sex",
     age        ~ "Age",
     race_cat   ~ "Race/Ethnicity",
-    visual_cat ~ "Visual Acuity"),
+    visual_acuity ~ "Visual Acuity"),
   missing = "no")
 
 # Display table
@@ -184,8 +184,9 @@ specific_completion_by_condition
 
 # ————————————————————————————————————————————————————————————————————————————
 
-# ———————————————— Variable Definition ———————————————————————————————————————————
-# Outcome: completion rate (Succee = 1, Fail = 0)
+
+# ———————————————— Variable Definition —————————————————————————————————————————
+# Outcome: Success or not (Succee = 1, Fail = 0)
 analysis <- baseline_devices
 analysis <- analysis %>%
   mutate(completed = if_else(success == "y", 1, 0))
@@ -193,9 +194,13 @@ analysis <- analysis %>%
 analysis %>% count(completed)
 
 
-# Covariate
+# Covariate: route, walk order, visual acuity
 analysis <- analysis %>%
-  mutate(route_combined = sub("R$", "", route))
+  mutate(route_combined = sub("R$", "", route),
+         walk_order = walk_order) %>%
+  left_join(
+         demographics %>% 
+         select(subject, visual_acuity), by = "subject")
 
 
 # Exposure 1: Baseline vs App-assisted
@@ -210,24 +215,75 @@ analysis %>% count(device, application)
 
 # ————————————————————————————————————————————————————————————————————————————
 
+
+
 # ———————————————— Logistic Regression —————————————————————————————————————————
+analysis$route_combined <- factor(analysis$route_combined)
+analysis$visual_acuity <- factor(analysis$visual_acuity)
+
+
 # Model for Exposure 1
 analysis$application <- factor(analysis$application, levels = c("Baseline", "App-assisted"))
-analysis$route_combined <- factor(analysis$route_combined)
 
 # Logistic Regression
-logit_ex1 <- glm(
+logit_ex1_m1 <- glm(
+  completed ~ application, family = binomial(), data = analysis)
+
+logit_ex1_m2 <- glm(
   completed ~ application + route_combined, family = binomial(), data = analysis)
 
-summary(logit_ex1)
-exp(cbind(OR = coef(logit_ex1), confint(logit_ex1)))
+logit_ex1_m3 <- glm(
+  completed ~ application + walk_order, family = binomial(), data = analysis)
+
+logit_ex1_m4 <- glm(
+  completed ~ application + visual_acuity, family = binomial(), data = analysis)
+
+logit_ex1_m5 <- glm(
+  completed ~ application + route_combined + walk_order + visual_acuity,
+  family = binomial(), data = analysis)
+
+summary(logit_ex1_m1)
+summary(logit_ex1_m2)
+summary(logit_ex1_m3)
+summary(logit_ex1_m4)
+summary(logit_ex1_m5)
+
+# OR + 95% CI
+exp(cbind(OR = coef(logit_ex1_m1), confint(logit_ex1_m1)))
+exp(cbind(OR = coef(logit_ex1_m2), confint(logit_ex1_m2)))
+exp(cbind(OR = coef(logit_ex1_m3), confint(logit_ex1_m3)))
+exp(cbind(OR = coef(logit_ex1_m4), confint(logit_ex1_m4)))
+exp(cbind(OR = coef(logit_ex1_m5), confint(logit_ex1_m5)))
+
 
 # Firth Logistic Regression
-firth_ex1 <- logistf(
+firth_ex1_m1 <- logistf(completed ~ application, data = analysis)
+
+firth_ex1_m2 <- logistf(
   completed ~ application + route_combined, data = analysis)
 
-summary(firth_ex1)
-exp(cbind(OR = coef(firth_ex1), confint(firth_ex1)))
+firth_ex1_m3 <- logistf(
+  completed ~ application + walk_order, data = analysis)
+
+firth_ex1_m4 <- logistf(
+  completed ~ application + visual_acuity, data = analysis)
+
+firth_ex1_m5 <- logistf(
+  completed ~ application + route_combined + walk_order + visual_acuity,
+  data = analysis)
+
+summary(firth_ex1_m1)
+summary(firth_ex1_m2)
+summary(firth_ex1_m3)
+summary(firth_ex1_m4)
+summary(firth_ex1_m5)
+
+# OR + 95% CI
+exp(cbind(OR = coef(firth_ex1_m1), confint(firth_ex1_m1)))
+exp(cbind(OR = coef(firth_ex1_m2), confint(firth_ex1_m2)))
+exp(cbind(OR = coef(firth_ex1_m3), confint(firth_ex1_m3)))
+exp(cbind(OR = coef(firth_ex1_m4), confint(firth_ex1_m4)))
+exp(cbind(OR = coef(firth_ex1_m5), confint(firth_ex1_m5)))
 
 
 
@@ -235,17 +291,55 @@ exp(cbind(OR = coef(firth_ex1), confint(firth_ex1)))
 analysis$device <- factor(analysis$device, levels = c("Baseline", "Clew", "Goodmaps", "NaviLens"))
 
 # Logistic Regression
-logit_ex2 <- glm(
-  completed ~ device + route_combined, family = binomial(), data = analysis)
+logit_ex2_m1 <- glm(completed ~ device, family = binomial(), data = analysis)
 
-summary(logit_ex2)
-exp(cbind(OR = coef(logit_ex2), confint(logit_ex2)))
+logit_ex2_m2 <- glm(completed ~ device + route_combined, family = binomial(), data = analysis)
+
+logit_ex2_m3 <- glm(completed ~ device + walk_order, family = binomial(), data = analysis)
+
+logit_ex2_m4 <- glm(completed ~ device + visual_acuity, family = binomial(), data = analysis)
+
+logit_ex2_m5 <- glm(completed ~ device + route_combined + walk_order + visual_acuity,
+                    family = binomial(), data = analysis)
+
+summary(logit_ex2_m1)
+summary(logit_ex2_m2)
+summary(logit_ex2_m3)
+summary(logit_ex2_m4)
+summary(logit_ex2_m5)
+
+# OR + 95% CI
+exp(cbind(OR = coef(logit_ex2_m1), confint(logit_ex2_m1)))
+exp(cbind(OR = coef(logit_ex2_m2), confint(logit_ex2_m2)))
+exp(cbind(OR = coef(logit_ex2_m3), confint(logit_ex2_m3)))
+exp(cbind(OR = coef(logit_ex2_m4), confint(logit_ex2_m4)))
+exp(cbind(OR = coef(logit_ex2_m5), confint(logit_ex2_m5)))
+
 
 # Firth Logistic Regression
-firth_ex2 <- logistf(
-  completed ~ device + route_combined, data = analysis)
+# Exposure 2: Firth Logistic Regression
+firth_ex2_m1 <- logistf(completed ~ device, data = analysis)
 
-summary(firth_ex2)
-exp(cbind(OR = coef(firth_ex2), confint(firth_ex2)))
+firth_ex2_m2 <- logistf(completed ~ device + route_combined, data = analysis)
+
+firth_ex2_m3 <- logistf(completed ~ device + walk_order, data = analysis)
+
+firth_ex2_m4 <- logistf(completed ~ device + visual_acuity, data = analysis)
+
+firth_ex2_m5 <- logistf(completed ~ device + route_combined + walk_order + visual_acuity,
+                        data = analysis)
+
+summary(firth_ex2_m1)
+summary(firth_ex2_m2)
+summary(firth_ex2_m3)
+summary(firth_ex2_m4)
+summary(firth_ex2_m5)
+
+# OR + 95% CI
+exp(cbind(OR = coef(firth_ex2_m1), confint(firth_ex2_m1)))
+exp(cbind(OR = coef(firth_ex2_m2), confint(firth_ex2_m2)))
+exp(cbind(OR = coef(firth_ex2_m3), confint(firth_ex2_m3)))
+exp(cbind(OR = coef(firth_ex2_m4), confint(firth_ex2_m4)))
+exp(cbind(OR = coef(firth_ex2_m5), confint(firth_ex2_m5)))
 
 # ————————————————————————————————————————————————————————————————————————————
