@@ -1,10 +1,14 @@
 # Install packages
 install.packages("openxlsx")
 install.packages("gtsummary")
+install.packages("logistf") 
+install.packages("openxlsx")
 
 library(openxlsx)
 library(dplyr)
 library(gtsummary)
+library(logistf)
+library(openxlsx)
 
 # Import dataset
 file_path <- " "    # Based on file path
@@ -242,18 +246,6 @@ logit_ex1_m5 <- glm(
   completed ~ application + route_combined + walk_order + visual_acuity,
   family = binomial(), data = analysis)
 
-summary(logit_ex1_m1)
-summary(logit_ex1_m2)
-summary(logit_ex1_m3)
-summary(logit_ex1_m4)
-summary(logit_ex1_m5)
-
-# OR + 95% CI
-exp(cbind(OR = coef(logit_ex1_m1), confint(logit_ex1_m1)))
-exp(cbind(OR = coef(logit_ex1_m2), confint(logit_ex1_m2)))
-exp(cbind(OR = coef(logit_ex1_m3), confint(logit_ex1_m3)))
-exp(cbind(OR = coef(logit_ex1_m4), confint(logit_ex1_m4)))
-exp(cbind(OR = coef(logit_ex1_m5), confint(logit_ex1_m5)))
 
 
 # Firth Logistic Regression
@@ -272,19 +264,6 @@ firth_ex1_m5 <- logistf(
   completed ~ application + route_combined + walk_order + visual_acuity,
   data = analysis)
 
-summary(firth_ex1_m1)
-summary(firth_ex1_m2)
-summary(firth_ex1_m3)
-summary(firth_ex1_m4)
-summary(firth_ex1_m5)
-
-# OR + 95% CI
-exp(cbind(OR = coef(firth_ex1_m1), confint(firth_ex1_m1)))
-exp(cbind(OR = coef(firth_ex1_m2), confint(firth_ex1_m2)))
-exp(cbind(OR = coef(firth_ex1_m3), confint(firth_ex1_m3)))
-exp(cbind(OR = coef(firth_ex1_m4), confint(firth_ex1_m4)))
-exp(cbind(OR = coef(firth_ex1_m5), confint(firth_ex1_m5)))
-
 
 
 # Model for Exposure 2
@@ -302,18 +281,6 @@ logit_ex2_m4 <- glm(completed ~ device + visual_acuity, family = binomial(), dat
 logit_ex2_m5 <- glm(completed ~ device + route_combined + walk_order + visual_acuity,
                     family = binomial(), data = analysis)
 
-summary(logit_ex2_m1)
-summary(logit_ex2_m2)
-summary(logit_ex2_m3)
-summary(logit_ex2_m4)
-summary(logit_ex2_m5)
-
-# OR + 95% CI
-exp(cbind(OR = coef(logit_ex2_m1), confint(logit_ex2_m1)))
-exp(cbind(OR = coef(logit_ex2_m2), confint(logit_ex2_m2)))
-exp(cbind(OR = coef(logit_ex2_m3), confint(logit_ex2_m3)))
-exp(cbind(OR = coef(logit_ex2_m4), confint(logit_ex2_m4)))
-exp(cbind(OR = coef(logit_ex2_m5), confint(logit_ex2_m5)))
 
 
 # Firth Logistic Regression
@@ -329,17 +296,81 @@ firth_ex2_m4 <- logistf(completed ~ device + visual_acuity, data = analysis)
 firth_ex2_m5 <- logistf(completed ~ device + route_combined + walk_order + visual_acuity,
                         data = analysis)
 
-summary(firth_ex2_m1)
-summary(firth_ex2_m2)
-summary(firth_ex2_m3)
-summary(firth_ex2_m4)
-summary(firth_ex2_m5)
+
 
 # OR + 95% CI
-exp(cbind(OR = coef(firth_ex2_m1), confint(firth_ex2_m1)))
-exp(cbind(OR = coef(firth_ex2_m2), confint(firth_ex2_m2)))
-exp(cbind(OR = coef(firth_ex2_m3), confint(firth_ex2_m3)))
-exp(cbind(OR = coef(firth_ex2_m4), confint(firth_ex2_m4)))
-exp(cbind(OR = coef(firth_ex2_m5), confint(firth_ex2_m5)))
+# Exposure 1
+logit_ex1_models <- list(logit_ex1_m1, logit_ex1_m2, logit_ex1_m3, logit_ex1_m4, logit_ex1_m5)
+firth_ex1_models <- list(firth_ex1_m1, firth_ex1_m2, firth_ex1_m3, firth_ex1_m4, firth_ex1_m5)
+
+exposure1_table <- data.frame(
+  Model = c(
+    "Model 1: App-assisted",
+    "Model 2: App-assisted + Route",
+    "Model 3: App-assisted + Walk order",
+    "Model 4: App-assisted + Visual acuity",
+    "Model 5: App-assisted + Route + Walk order + Visual acuity"),
+  `OR (95% CI), Logistic Regression` = sapply(logit_ex1_models, extract_or_ci, term = "applicationApp-assisted"),
+  `OR (95% CI), Firth Regression`    = sapply(firth_ex1_models, extract_or_ci, term = "applicationApp-assisted"),
+  check.names = FALSE,
+  row.names = NULL)
+
+exposure1_table
+
+
+
+# Exposure 2
+logit_ex2_models <- list(logit_ex2_m1, logit_ex2_m2, logit_ex2_m3, logit_ex2_m4, logit_ex2_m5)
+firth_ex2_models <- list(firth_ex2_m1, firth_ex2_m2, firth_ex2_m3, firth_ex2_m4, firth_ex2_m5)
+
+model_labels <- c(
+  "Model 1: Device",
+  "Model 2: Device + Route",
+  "Model 3: Device + Walk order",
+  "Model 4: Device + Visual acuity",
+  "Model 5: Device + Route + Walk order + Visual acuity")
+
+device_terms <- c("deviceClew", "deviceGoodmaps", "deviceNaviLens")
+device_labels <- c("Clew", "Goodmaps", "NaviLens")
+
+exposure2_table <- do.call(rbind, lapply(seq_along(model_labels), function(i) {
+  data.frame(
+    Model = model_labels[i],
+    Device = device_labels,
+    `OR (95% CI), Logistic Regression` = sapply(device_terms, function(t) extract_or_ci(logit_ex2_models[[i]], t)),
+    `OR (95% CI), Firth Regression`    = sapply(device_terms, function(t) extract_or_ci(firth_ex2_models[[i]], t)),
+    check.names = FALSE,
+    row.names = NULL)}))
+
+exposure2_table
+
+
+
+# Export as a Excel file
+wb <- createWorkbook()
+
+addWorksheet(wb, "Exposure 1 - Application")
+addWorksheet(wb, "Exposure 2 - Device")
+
+writeData(wb, "Exposure 1 - Application", exposure1_table)
+writeData(wb, "Exposure 2 - Device", exposure2_table)
+
+addStyle(
+  wb, "Exposure 1 - Application",
+  style = createStyle(textDecoration = "bold"),
+  rows = 1, cols = 1:ncol(exposure1_table),
+  gridExpand = TRUE)
+
+addStyle(
+  wb, "Exposure 2 - Device",
+  style = createStyle(textDecoration = "bold"),
+  rows = 1, cols = 1:ncol(exposure2_table),
+  gridExpand = TRUE)
+
+setColWidths(wb, "Exposure 1 - Application", cols = 1:ncol(exposure1_table), widths = "auto")
+setColWidths(wb, "Exposure 2 - Device", cols = 1:ncol(exposure2_table), widths = "auto")
+
+saveWorkbook(
+  wb, "OR_summary_tables.xlsx", overwrite = TRUE)
 
 # ————————————————————————————————————————————————————————————————————————————
