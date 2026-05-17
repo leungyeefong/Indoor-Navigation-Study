@@ -1,0 +1,130 @@
+# Install packages
+install.packages("openxlsx")
+install.packages("gtsummary")
+install.packages("logistf") 
+install.packages("openxlsx")
+
+library(openxlsx)
+library(dplyr)
+library(gtsummary)
+library(logistf)
+library(openxlsx)
+
+# Import dataset
+file_path <- " "    # Based on file path
+demographics <- read.xlsx(file_path, sheet = "Demographics")
+baseline_devices <- read.xlsx(file_path, sheet = "All Baseline+devices")
+
+
+# ————————————————— Section 1: Demographic Analysis ————————————————————————————
+# Define
+demographics <- demographics %>%
+  filter(!subject %in% c("8-A", "17-A")) %>%
+  mutate(
+    sex_cat = case_when(
+      sex == "Male"   ~ 0,
+      sex == "Female" ~ 1,
+      TRUE ~ NA_real_),
+    
+    race_cat = case_when(
+      `race/ethnicity` == "White" ~ 0,
+      `race/ethnicity` == "White/ Latino" ~ 0,
+      `race/ethnicity` == "Black" ~ 1,
+      `race/ethnicity` == "Asian" ~ 2,
+      TRUE ~ NA_real_),
+    
+    visual_acuity = factor(
+      `visual.acuity`,
+      levels = c(
+        "No vision",
+        "Able to see lights",
+        "Able to see shapes",
+        "Able to read large text")))
+
+
+# Demographic Table
+demographic_table <- tbl_summary(
+  mutate(
+    demographics,
+    sex_cat = factor(sex_cat, levels = c(0, 1), labels = c("Male", "Female")),
+    race_cat = factor(race_cat, levels = c(0, 1, 2), labels = c("White", "Black", "Asian")),
+    visual_acuity = factor(
+      visual_acuity,
+      levels = c("No vision", "Able to see lights", "Able to see shapes", "Able to read large text")))
+  
+  [, c("sex_cat", "age", "race_cat", "visual_acuity")],
+  statistic = list(
+    all_categorical() ~ "{n} ({p}%)",
+    age ~ "{median} [{p25}, {p75}]"),
+  
+  label = list(
+    sex_cat    ~ "Sex",
+    age        ~ "Age",
+    race_cat   ~ "Race/Ethnicity",
+    visual_acuity ~ "Visual Acuity"),
+  missing = "no")
+
+# Display table
+demographic_table
+# ————————————————————————————————————————————————————————————————————————————
+
+
+
+# ————————————————— Section 2: Logistics Regression ————————————————————————————
+# Outcome Variable
+analysis <- baseline_devices
+
+analysis$completed <- ifelse(
+  analysis$success == "y", 1, 0)
+
+# Goodmaps as reference
+analysis$device <- factor(
+  analysis$device,
+  levels = c("Goodmaps", "Clew", "NaviLens"))
+
+# Age & Visual Acuity
+analysis <- merge(
+  analysis,
+  demographics[, c("subject", "age", "visual_acuity")],
+  by = "subject")
+
+analysis$visual_acuity <- factor(
+  analysis$visual_acuity,
+  levels = c(
+    "No vision",
+    "Able to see lights",
+    "Able to see shapes",
+    "Able to read large text"),
+  ordered = TRUE)
+
+# Crude logistic regression model
+logistics_crude <- glm(
+  completed ~ device,
+  family = binomial,
+  data = analysis)
+
+summary(logistics_crude)
+exp(cbind(OR = coef(logistics_crude), confint(logistics_crude)))
+
+# Age-adjusted model
+logistics_age <- glm(
+  completed ~ device + age,
+  family = binomial,
+  data = analysis)
+
+summary(logistics_age)
+exp(cbind(OR = coef(logistics_age), confint(logistics_age)))
+
+# Visual acuity-adjusted model
+logistics_va <- glm(
+  completed ~ device + visual_acuity,
+  family = binomial,
+  data = analysis)
+
+summary(logistics_va)
+exp(cbind(OR = coef(logistics_va), confint(logistics_va)))
+# ————————————————————————————————————————————————————————————————————————————
+
+
+
+# ————————————————— Section 3: Linear Regression ————————————————————————————
