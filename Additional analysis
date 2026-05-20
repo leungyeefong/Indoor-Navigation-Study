@@ -183,25 +183,20 @@ confint(linear_speed)
 
 
 # ————————— Section 4: Clew vs NaviLens (Clew as reference category) ———————————
-analysis$device_clew_ref <- factor(
-  analysis$device,
+analysis$device_clew_ref <- factor(analysis$device,
   levels = c("Clew", "Goodmaps", "NaviLens"))
 
-speed_analysis$device_clew_ref <- factor(
-  speed_analysis$device,
+speed_analysis$device_clew_ref <- factor(speed_analysis$device,
   levels = c("Clew", "Goodmaps", "NaviLens"))
 
 
 # Logistic regression: route completion
 # Crude model
 logistics_clew_crude <- glm(
-  completed ~ device_clew_ref,
-  family = binomial,
-  data = analysis)
+  completed ~ device_clew_ref, family = binomial, data = analysis)
 
 summary(logistics_clew_crude)
-exp(cbind(OR = coef(logistics_clew_crude),
-          confint(logistics_clew_crude)))
+exp(cbind(OR = coef(logistics_clew_crude), confint(logistics_clew_crude)))
 
 
 # Age-adjusted model
@@ -211,26 +206,21 @@ logistics_clew_age <- glm(
   data = analysis)
 
 summary(logistics_clew_age)
-exp(cbind(OR = coef(logistics_clew_age),
-          confint(logistics_clew_age)))
+exp(cbind(OR = coef(logistics_clew_age), confint(logistics_clew_age)))
 
 
 # Visual acuity-adjusted model
 logistics_clew_va <- glm(
-  completed ~ device_clew_ref + visual_acuity,
-  family = binomial,
-  data = analysis)
+  completed ~ device_clew_ref + visual_acuity, family = binomial, data = analysis)
 
 summary(logistics_clew_va)
-exp(cbind(OR = coef(logistics_clew_va),
-          confint(logistics_clew_va)))
+exp(cbind(OR = coef(logistics_clew_va), confint(logistics_clew_va)))
 
 
 # Linear regression: navigation walking speed
 # Crude model
 linear_clew_crude <- lm(
-  navigation_speed ~ device_clew_ref,
-  data = speed_analysis)
+  navigation_speed ~ device_clew_ref, data = speed_analysis)
 
 summary(linear_clew_crude)
 confint(linear_clew_crude)
@@ -238,11 +228,11 @@ confint(linear_clew_crude)
 
 # Preferred speed-adjusted model
 linear_clew_speed <- lm(
-  navigation_speed ~ device_clew_ref + preferred_speed,
-  data = speed_analysis)
+  navigation_speed ~ device_clew_ref + preferred_speed, data = speed_analysis)
 
 summary(linear_clew_speed)
 confint(linear_clew_speed)
 
 # ————————————————————————————————————————————————————————————————————————————
+
 
