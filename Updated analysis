@@ -236,3 +236,94 @@ confint(linear_clew_speed)
 # ————————————————————————————————————————————————————————————————————————————
 
 
+
+# —————————————————— Section 5: Baseline Reference Analyses ——————————————————
+# Baseline-inclusive cohort
+analysis_baseline <- baseline_devices
+
+analysis_baseline$completed <- ifelse(
+  analysis_baseline$success == "y", 1, 0)
+
+# Baseline as reference category
+analysis_baseline$device <- factor(
+  analysis_baseline$device,
+  levels = c("Baseline", "Goodmaps", "Clew", "NaviLens"))
+
+# Merge demographic variables
+analysis_baseline <- merge(
+  analysis_baseline,
+  demographics[, c("subject", "age", "visual_acuity")],
+  by = "subject")
+
+analysis_baseline$visual_acuity <- factor(
+  analysis_baseline$visual_acuity,
+  levels = c(
+    "No vision",
+    "Able to see lights",
+    "Able to see shapes",
+    "Able to read large text"),
+  ordered = TRUE)
+
+
+# Logistic regression
+# Crude model
+baseline_crude <- glm(completed ~ device, family = binomial, data = analysis_baseline)
+
+summary(baseline_crude)
+exp(cbind(OR = coef(baseline_crude), confint(baseline_crude)))
+
+
+# Age-adjusted model
+baseline_age <- glm(
+  completed ~ device + age, family = binomial, data = analysis_baseline)
+
+summary(baseline_age)
+exp(cbind(OR = coef(baseline_age), confint(baseline_age)))
+
+
+# Visual acuity-adjusted model
+baseline_va <- glm(
+  completed ~ device + visual_acuity, family = binomial, data = analysis_baseline)
+
+summary(baseline_va)
+exp(cbind(OR = coef(baseline_va), confint(baseline_va)))
+
+
+# ————————————————— Linear Regression ————————————————————————————————
+
+# Merge preferred walking speed
+analysis_baseline <- merge(
+  analysis_baseline,
+  preferred_speed[, c("subject", "preferred_speed")],
+  by = "subject")
+
+# Merge route distance
+analysis_baseline <- merge(analysis_baseline, route_distance, by = "route")
+
+# Successful routes only
+speed_baseline <- analysis_baseline[analysis_baseline$completed == 1, ]
+
+# Convert time to numeric
+speed_baseline$time <- as.numeric(speed_baseline$time)
+
+# Navigation walking speed
+speed_baseline$navigation_speed <- speed_baseline$meters / speed_baseline$time
+
+
+# Crude linear regression model
+baseline_linear_crude <- lm(navigation_speed ~ device, data = speed_baseline)
+
+summary(baseline_linear_crude)
+confint(baseline_linear_crude)
+
+
+# Preferred speed-adjusted model
+baseline_linear_speed <- lm(
+  navigation_speed ~ device + preferred_speed, data = speed_baseline)
+
+summary(baseline_linear_speed)
+confint(baseline_linear_speed)
+
+# ————————————————————————————————————————————————————————————————————————————
+
+
