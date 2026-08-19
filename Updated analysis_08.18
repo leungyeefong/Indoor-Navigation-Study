@@ -327,3 +327,80 @@ confint(baseline_linear_speed)
 # ————————————————————————————————————————————————————————————————————————————
 
 
+
+# ———————————————— Section 6: Multiple Comparison Adjustments ————————————————
+# A. Pairwise comparisons among the 3 navigation apps - Tukey adjustment
+# ---------------- Route Completion: Logistic Regression ----------------
+# Crude model
+emm_log_crude <- emmeans(logistics_crude, ~ device)
+pairs(emm_log_crude, adjust = "tukey", type = "response")
+
+# Age-adjusted model
+emm_log_age <- emmeans(logistics_age, ~ device)
+pairs(emm_log_age, adjust = "tukey", type = "response")
+
+# Visual acuity-adjusted model
+emm_log_va <- emmeans(logistics_va, ~ device)
+pairs(emm_log_va, adjust = "tukey", type = "response")
+
+
+# ------------- Navigation Walking Speed: Linear Regression -------------
+# Crude model
+emm_speed_crude <- emmeans(linear_crude, ~ device)
+pairs(emm_speed_crude, adjust = "tukey")
+
+# Preferred walking speed-adjusted model
+emm_speed_adjusted <- emmeans(linear_speed, ~ device)
+pairs(emm_speed_adjusted, adjust = "tukey")
+
+
+
+# B. Comparisons of each navigation app vs Baseline - Dunnett adjustment
+# ---------- Route Completion: Logistic Regression ----------
+# Crude model
+emm_base_log_crude <- emmeans(baseline_crude, ~ device)
+contrast(
+  emm_base_log_crude,
+  method = "trt.vs.ctrl",
+  ref = "Baseline",
+  adjust = "dunnettx",
+  type = "response")
+
+# Age-adjusted model
+emm_base_log_age <- emmeans(baseline_age, ~ device)
+contrast(
+  emm_base_log_age,
+  method = "trt.vs.ctrl",
+  ref = "Baseline",
+  adjust = "dunnettx",
+  type = "response")
+
+# Visual acuity-adjusted model
+emm_base_log_va <- emmeans(baseline_va, ~ device)
+contrast(
+  emm_base_log_va,
+  method = "trt.vs.ctrl",
+  ref = "Baseline",
+  adjust = "dunnettx",
+  type = "response")
+
+
+# ---------- Navigation Walking Speed: Linear Regression ----------
+# Crude model
+emm_base_speed_crude <- emmeans(baseline_linear_crude, ~ device)
+contrast(
+  emm_base_speed_crude,
+  method = "trt.vs.ctrl",
+  ref = "Baseline",
+  adjust = "dunnettx")
+
+
+# Preferred walking speed-adjusted model
+emm_base_speed_adjusted <- emmeans(baseline_linear_speed, ~ device)
+contrast(
+  emm_base_speed_adjusted,
+  method = "trt.vs.ctrl",
+  ref = "Baseline",
+  adjust = "dunnettx")
+
+
